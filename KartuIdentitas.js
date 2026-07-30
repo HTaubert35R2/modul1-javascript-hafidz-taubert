@@ -3,8 +3,9 @@ let age = 16;
 const school = "SMK Telkom Malang";
 let hasGraduated = false;
 const hobi = ["Volleyball","Gaming","Reading"];
+let family
 
-const identitas = {
+let identitas = {
     Nama: namasiswa,
     Umur: age,
     Sekolah: school,
@@ -13,8 +14,14 @@ const identitas = {
     Nilai: {
         Matematika: 90,
         BahasaInggris: 85,
-    }
+    },
+    Keluarga: family
 }
+
+
 identitas.statusAktif = true;
+identitas.kota = "Malang";
+delete identitas.Hobi;
+
 
 console.log(identitas);
