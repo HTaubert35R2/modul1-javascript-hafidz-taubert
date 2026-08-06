@@ -13,7 +13,7 @@ let identitas = {
     Hobi: hobi,
     Nilai: {
         Matematika: 90,
-        BahasaInggris: 85,
+        BahasaInggris: 100,
     },
     Keluarga: family
 }

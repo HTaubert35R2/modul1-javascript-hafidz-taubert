@@ -1,24 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-    <head>
-        <title>TEST</title>
-    </head>
-    <body>
-        <h1>IDK WHAT THIS DOES</h1>
-        <script>
-            let namaSiswa = "Hafidz Khoirul T"
-            let umurSiswa = 16
-            let alamat = "Malang"
-            let statusSiswa = true
-            let kelas
-            let sekolah = null
+<head>
+  <meta charset="utf-8" />
+  <title>Point Manager — editable inputs</title>
+  <style>
+    body{font-family:Segoe UI,Arial;max-width:900px;margin:20px}
+    .row{display:flex;gap:8px;align-items:center;margin:6px 0}
+    .row label{width:70px}
+    input[type=number]{width:100px;padding:4px}
+    .info{margin-top:12px;font-weight:600}
+    .note{color:#666;font-size:0.9em}
+    .err{color:#a00;font-weight:700}
+    button.small{padding:4px 8px}
+  </style>
+</head>
+<body>
+  <h1>Point Manager — edit each score</h1>
 
-            console.log("Nama: " + namaSiswa)
-            console.log("Umur: " + umurSiswa)
-            console.log("Alamat: " + alamat)
-            console.log("Status Siswa: " + statusSiswa)
-            console.log("Kelas: " + kelas)
-            console.log("Sekolah: " + sekolah)
-        </script>
-    </body>
+  <div id="inputs"></div>
+
+  <div class="info">
+    Sum: <span id="sum">0</span>
+    &nbsp; Remaining: <span id="remaining">330</span>
+  </div>
+
+  <div style="margin-top:10px">
+    <button id="applyAll" class="small">Apply All</button>
+    <button id="reset" class="small">Reset</button>
+    <span class="note">Type a number into a field then press "Set" (or Apply All) to apply. Values are floored and clamped to keep total ≤ 330.</span>
+  </div>
+
+  <div id="err" class="err" aria-live="polite"></div>
+
+  <script src="variable.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const errEl = document.getElementById('err');
+      if (!window.pointManager) {
+        errEl.textContent = 'Error: variable.js did not load or did not expose pointManager.';
+        return;
+      }
+      const pm = window.pointManager;
+      const inputsContainer = document.getElementById('inputs');
+      const sumEl = document.getElementById('sum');
+      const remEl = document.getElementById('remaining');
+      const COUNT = 10;
+      const inputEls = [];
+
+      function createRow(i) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const label = document.createElement('label');
+        label.textContent = `Index ${i}:`;
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = 0;
+        input.step = 1;
+        input.placeholder = 'enter number';
+        const setBtn = document.createElement('button');
+        setBtn.textContent = 'Set';
+        setBtn.className = 'small';
+        const incBtn = document.createElement('button');
+        incBtn.textContent = '+';
+        incBtn.className = 'small';
+        const decBtn = document.createElement('button');
+        decBtn.textContent = '−';
+        decBtn.className = 'small';
+        const maxLabel = document.createElement('span');
+        maxLabel.className = 'note';
+        maxLabel.style.marginLeft = '8px';
+
+        setBtn.addEventListener('click', () => {
+          errEl.textContent = '';
+          const val = input.value === '' ? NaN : Number(input.value);
+          if (!Number.isFinite(val)) { errEl.textContent = 'Enter a valid number.'; return; }
+          try {
+            const actual = pm.setValue(i, val);
+            input.value = actual;
+            render();
+          } catch (e) {
+            errEl.textContent = e.message || String(e);
+          }
+        });
+
+        incBtn.addEventListener('click', () => {
+          try {
+            const actual = pm.increment(i, 1);
+            input.value = actual;
+            render();
+          } catch (e) { errEl.textContent = e.message || String(e); }
+        });
+
+        decBtn.addEventListener('click', () => {
+          try {
+            const actual = pm.increment(i, -1);
+            input.value = actual;
+            render();
+          } catch (e) { errEl.textContent = e.message || String(e); }
+        });
+
+        row.appendChild(label);
+        row.appendChild(input);
+        row.appendChild(setBtn);
+        row.appendChild(incBtn);
+        row.appendChild(decBtn);
+        row.appendChild(maxLabel);
+        inputsContainer.appendChild(row);
+
+        inputEls.push({ input, maxLabel });
+      }
+
+      for (let i = 0; i < COUNT; i++) createRow(i);
+
+      document.getElementById('applyAll').addEventListener('click', () => {
+        errEl.textContent = '';
+        // apply each input in order; setValue will clamp automatically
+        for (let i = 0; i < inputEls.length; i++) {
+          const raw = inputEls[i].input.value;
+          if (raw === '') continue;
+          const v = Number(raw);
+          if (!Number.isFinite(v)) { errEl.textContent = 'One or more inputs invalid.'; return; }
+          try { inputEls[i].input.value = pm.setValue(i, v); } catch (e) { errEl.textContent = e.message || String(e); return; }
+        }
+        render();
+      });
+
+      document.getElementById('reset').addEventListener('click', () => {
+        pm.reset();
+        render();
+      });
+
+      function render() {
+        const vals = pm.getValues();
+        const remaining = pm.getRemaining();
+        sumEl.textContent = pm.getSum();
+        remEl.textContent = remaining;
+        for (let i = 0; i < vals.length; i++) {
+          // update input display to current value (if user hasn't typed something new)
+          if (document.activeElement !== inputEls[i].input) inputEls[i].input.value = vals[i];
+          // max allowed for this index = remaining + current value
+          const maxAllowed = remaining + vals[i];
+          inputEls[i].maxLabel.textContent = ` max possible: ${maxAllowed}`;
+        }
+      }
+
+      // initial example
+      try { pm.setValue(0, 42); } catch (e) {}
+      render();
+    });
+  </script>
+</body>
 </html>
